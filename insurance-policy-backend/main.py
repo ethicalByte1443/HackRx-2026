@@ -19,7 +19,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # adjust to your frontend
+    allow_origins=["http://localhost:8080"],  # Your React app's origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

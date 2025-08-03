@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Insurance Claim Assistant Design System - Professional & Modern
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --background: 210 20% 98%;
+    --foreground: 215 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 20% 15%;
+
+    /* Insurance Blue Palette */
+    --primary: 213 94% 68%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 213 94% 85%;
+    --primary-dark: 213 94% 55%;
+
+    /* Trust Green Accent */
+    --secondary: 142 76% 45%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 142 76% 65%;
+
+    /* Warm Professional Colors */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 39 77% 88%;
+    --accent-foreground: 215 20% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 94% 68%;
+
+    /* Chat Colors */
+    --chat-user: 213 94% 68%;
+    --chat-user-foreground: 0 0% 100%;
+    --chat-assistant: 210 40% 96%;
+    --chat-assistant-foreground: 215 20% 15%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(213 94% 68%), hsl(142 76% 45%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(210 20% 98%), hsl(210 40% 96%));
+
+    /* Shadows */
+    --shadow-soft: 0 4px 6px -1px hsl(213 94% 68% / 0.1), 0 2px 4px -1px hsl(213 94% 68% / 0.06);
+    --shadow-medium: 0 10px 15px -3px hsl(213 94% 68% / 0.1), 0 4px 6px -2px hsl(213 94% 68% / 0.05);
+    --shadow-large: 0 25px 50px -12px hsl(213 94% 68% / 0.25);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Mode - Professional Insurance Theme */
+    --background: 215 28% 9%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 28% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 28% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Bright Blue for Dark Mode */
+    --primary: 213 94% 68%;
+    --primary-foreground: 215 28% 9%;
+    --primary-light: 213 94% 85%;
+    --primary-dark: 213 94% 55%;
+
+    /* Green Accent for Dark */
+    --secondary: 142 76% 55%;
+    --secondary-foreground: 215 28% 9%;
+    --secondary-light: 142 76% 75%;
+
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 18%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 213 94% 68%;
+
+    /* Dark Chat Colors */
+    --chat-user: 213 94% 68%;
+    --chat-user-foreground: 215 28% 9%;
+    --chat-assistant: 217 33% 18%;
+    --chat-assistant-foreground: 210 40% 98%;
+
+    /* Dark Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(213 94% 68%), hsl(142 76% 55%));
+    --gradient-card: linear-gradient(145deg, hsl(215 28% 12%), hsl(217 33% 16%));
+    --gradient-subtle: linear-gradient(180deg, hsl(215 28% 9%), hsl(217 33% 12%));
+
+    /* Dark Shadows */
+    --shadow-soft: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-medium: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -2px hsl(0 0% 0% / 0.2);
+    --shadow-large: 0 25px 50px -12px hsl(0 0% 0% / 0.5);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Hero Card Styles */
+  .hero-card {
+    @apply bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border border-border/50 
+           shadow-lg hover:shadow-xl transition-all duration-300 
+           hover:scale-[1.02] hover:border-primary/30;
+  }
+
+  /* Chat Bubble Styles */
+  .chat-bubble-user {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .chat-bubble-assistant {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  /* File Upload Styles */
+  .upload-area {
+    @apply border-2 border-dashed border-border hover:border-primary/50 
+           transition-colors duration-300 bg-gradient-to-br from-muted/30 to-muted/10;
+  }
+
+  .upload-area.dragover {
+    @apply border-primary bg-primary/5;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-white/80 dark:bg-black/20 backdrop-blur-md border border-white/20;
+  }
+}
