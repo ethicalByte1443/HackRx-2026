@@ -1,0 +1,12 @@
+# Python environment and build artifacts
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# PDF files
+*.pdf
+
