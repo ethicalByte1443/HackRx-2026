@@ -44,6 +44,8 @@ def extract_text_from_pdf(file_path: str) -> str:
     return text
 
 def extract_clauses_from_pdf(text: str) -> list[str]:
+    # hello
+    text2 = text
     # Step 1: Normalize whitespace across the entire text
     cleaned_text = re.sub(r'\s+', ' ', text).strip()
 
