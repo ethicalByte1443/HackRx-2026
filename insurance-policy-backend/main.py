@@ -12,7 +12,7 @@ import requests
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 import spacy
-import re
+import re as re
 
 nlp = spacy.load("en_core_web_sm")
 model = SentenceTransformer("all-MiniLM-L6-v2")
