@@ -168,7 +168,7 @@ export default function UploadPage() {
                   value={userQuery}
                   onChange={(e) => setUserQuery(e.target.value)}
                   placeholder="e.g., 46-year-old male, knee surgery in Pune"
-                  className="w-full border p-2 rounded mt-1"
+                  className="w-full border p-2 rounded mt-1 text-black"
                 />
 
                 <Button
