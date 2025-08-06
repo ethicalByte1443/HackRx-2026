@@ -5,16 +5,22 @@ from dotenv import load_dotenv
 import os
 import shutil
 import fitz  # PyMuPDF
-import numpy as np
-import faiss
 import json
 import requests
-from sentence_transformers import SentenceTransformer
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 import re as re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Use lightweight TF-IDF instead of heavy sentence transformers
+vectorizer = TfidfVectorizer(
+    max_features=500,  # Reduced from 1000 to save memory
+    stop_words='english',
+    max_df=0.95,  # Ignore terms that appear in >95% of documents
+    min_df=1,  # Include terms that appear in at least 1 document
+    ngram_range=(1, 2)  # Include unigrams and bigrams
+)
 
 # ---------- Setup ----------
 load_dotenv()
@@ -44,31 +50,82 @@ def extract_text_from_pdf(file_path: str) -> str:
     return text
 
 def extract_clauses_from_pdf(text: str) -> list[str]:
-    # hello
-    text2 = text
-    # Step 1: Normalize whitespace across the entire text
+    # Memory-efficient clause extraction
+    # Step 1: Normalize whitespace and limit text size
+    if len(text) > 50000:  # Limit text to 50KB to save memory
+        text = text[:50000] + "..."
+    
     cleaned_text = re.sub(r'\s+', ' ', text).strip()
 
-    # Step 2: Split into clauses and clean again
-    clauses = [
-        clause.strip()
-        for clause in cleaned_text.split(".")
-        if len(clause.strip()) > 20
-    ]
+    # Step 2: Split into clauses using multiple delimiters
+    # Split by periods, but also by numbered clauses
+    clauses = []
+    
+    # First split by periods
+    period_splits = cleaned_text.split(".")
+    
+    for clause in period_splits:
+        clause = clause.strip()
+        if len(clause) > 30 and len(clause) < 1000:  # Skip very short or very long clauses
+            clauses.append(clause)
+    
+    # Also try to extract numbered clauses (1., 2., etc.)
+    numbered_pattern = r'(?:^|\n)\s*\d+\.\s*([^.]+(?:\.[^.]*)*)'
+    numbered_matches = re.findall(numbered_pattern, text, re.MULTILINE)
+    
+    for match in numbered_matches:
+        if len(match) > 30 and len(match) < 1000:
+            clauses.append(match.strip())
+    
+    # Remove duplicates and limit total clauses to save memory
+    unique_clauses = list(set(clauses))
+    return unique_clauses[:100]  # Limit to 100 clauses max
 
-    return clauses
-
-def get_fake_embedding(text: str):
-    """Fake embedding just for testing — Groq doesn't provide embedding API."""
-    return np.random.rand(384).tolist()
-
-def get_fake_embeddings(texts: list[str]):
-    return [get_fake_embedding(t) for t in texts]
-
-def search_top_k_clauses(query: str, faiss_index, clauses, k=5):
-    query_vector = np.array(get_fake_embedding(query)).reshape(1, -1)
-    distances, indices = faiss_index.search(query_vector, k)
-    return [clauses[i] for i in indices[0]]
+def find_relevant_clauses(query: str, clauses: list[str], top_k: int = 5):
+    """Find most relevant clauses using TF-IDF similarity (lightweight)"""
+    if not clauses:
+        return []
+    
+    # Limit clauses to save memory
+    if len(clauses) > 50:
+        clauses = clauses[:50]
+    
+    # Combine query with clauses for vectorization
+    all_texts = [query] + clauses
+    
+    try:
+        # Create TF-IDF vectors
+        tfidf_matrix = vectorizer.fit_transform(all_texts)
+        
+        # Calculate cosine similarity between query and all clauses
+        query_vector = tfidf_matrix[0:1]  # First row is the query
+        clause_vectors = tfidf_matrix[1:]  # Rest are clauses
+        
+        similarities = cosine_similarity(query_vector, clause_vectors).flatten()
+        
+        # Get top k most similar clauses
+        top_indices = similarities.argsort()[-top_k:][::-1]
+        
+        result = [clauses[i] for i in top_indices if similarities[i] > 0.05]  # Lower threshold
+        
+        # Clean up
+        del tfidf_matrix, query_vector, clause_vectors, similarities
+        
+        return result
+    except Exception as e:
+        print(f"TF-IDF error: {e}")
+        # Fallback: simple keyword matching
+        query_words = set(query.lower().split())
+        scored_clauses = []
+        for clause in clauses:
+            clause_words = set(clause.lower().split())
+            score = len(query_words.intersection(clause_words))
+            if score > 0:
+                scored_clauses.append((clause, score))
+        
+        # Sort by score and return top k
+        scored_clauses.sort(key=lambda x: x[1], reverse=True)
+        return [clause for clause, score in scored_clauses[:top_k]]
 
 
 def parse_and_enhance_query(user_query):
@@ -158,31 +215,28 @@ async def upload_pdf(file: UploadFile = File(...), user_query: str = Form(...)):
     if not real_clauses:
         raise HTTPException(status_code=400, detail="No valid clauses found in PDF.")
 
-    clause_embeddings = model.encode(real_clauses)
-    clause_embeddings_np = np.array(clause_embeddings)
-    dimension = clause_embeddings_np.shape[1]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(clause_embeddings_np)
-
+    # Use lightweight TF-IDF similarity instead of heavy embeddings
     parsed_query = parse_and_enhance_query(user_query)
     print("Parsed Query:", parsed_query)
 
-    # Step 2: Generate embedding and search
-    query_embedding = model.encode([parsed_query])
-    distances, indices = index.search(np.array(query_embedding), 5)
+    # Find relevant clauses using TF-IDF
+    matched_clauses = find_relevant_clauses(parsed_query, real_clauses, top_k=5)
 
-    # Step 3: Return matched clauses
-    matched_clauses = [real_clauses[i] for i in indices[0]]
-
+    if not matched_clauses:
+        # Fallback: use original query if parsed query doesn't match
+        matched_clauses = find_relevant_clauses(user_query, real_clauses, top_k=5)
+    
     top_clauses = ', '.join(matched_clauses[:5])
-    payload = {
-        "user_query": user_query,
-        "matched_clause": top_clauses
-    }
-
-
+    
     result = process_claim(user_query, top_clauses)
     print(result)
+    
+    # Clean up the uploaded file to save space
+    try:
+        os.remove(file_path)
+    except:
+        pass
+    
     return {
         "message": "File uploaded and processed successfully.",
         "user_query": user_query,
