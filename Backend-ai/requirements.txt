@@ -9,3 +9,4 @@ requests
 sentence-transformers
 groq
 python-multipart
+gunicorn
