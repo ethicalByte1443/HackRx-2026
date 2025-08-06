@@ -12,10 +12,8 @@ import requests
 from sentence_transformers import SentenceTransformer
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
-import spacy
 import re as re
 
-nlp = spacy.load("en_core_web_sm")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # ---------- Setup ----------
@@ -74,26 +72,22 @@ def search_top_k_clauses(query: str, faiss_index, clauses, k=5):
 
 
 def parse_and_enhance_query(user_query):
-    doc = nlp(user_query)
-    keywords = []
+    # Simple keyword extraction using regex (no spaCy needed)
+    # Remove common stop words and extract meaningful terms
+    stop_words = {'the', 'is', 'at', 'which', 'on', 'a', 'an', 'as', 'are', 'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'to', 'of', 'in', 'for', 'with', 'by', 'from', 'and', 'or', 'but', 'not', 'no', 'so', 'if', 'then', 'than', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'}
     
-    # Extract proper nouns, nouns, medical terms, numbers, locations, dates
-    for token in doc:
-        if token.ent_type_ in ['DATE', 'TIME', 'PERCENT', 'MONEY', 'QUANTITY', 'ORDINAL', 'CARDINAL']:
-            keywords.append(token.text)
-        elif token.ent_type_ in ['GPE', 'LOC']:
-            keywords.append(token.text)
-        elif token.pos_ in ['NOUN', 'PROPN', 'ADJ']:
-            keywords.append(token.lemma_)  # Lemmatize to improve match
+    # Extract words and filter out stop words
+    words = re.findall(r'\b[A-Za-z]{3,}\b', user_query.lower())
+    keywords = [word for word in words if word not in stop_words]
     
-    # Join enhanced query
-    enhanced_query = " ".join(keywords)
+    # Also extract numbers, dates, and monetary amounts
+    numbers = re.findall(r'\b\d+(?:[.,]\d+)?\b', user_query)
+    money_patterns = re.findall(r'[₹$€£]\s*\d+(?:[.,]\d+)?(?:\s*(?:lakh|crore|thousand|million|billion))?', user_query, re.IGNORECASE)
     
-    return enhanced_query if enhanced_query else user_query
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    # Combine all extracted terms
+    all_terms = keywords + numbers + money_patterns
+    
+    return " ".join(all_terms) if all_terms else user_query
 
 def process_claim(user_query: str, clause: str):
     prompt = f"""
@@ -147,6 +141,10 @@ Response:
 @app.get("/")
 def root():
     return {"message": "Insurance Claim API running with Groq API for LLM."}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "model_loaded": True}
 
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...), user_query: str = Form(...)):
