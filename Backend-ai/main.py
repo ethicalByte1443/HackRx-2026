@@ -10,6 +10,7 @@ import faiss
 import json
 import requests
 from sentence_transformers import SentenceTransformer
+from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 import spacy
 import re as re
@@ -28,11 +29,12 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
+
 
 # ---------- Utilities ----------
 def extract_text_from_pdf(file_path: str) -> str:
