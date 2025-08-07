@@ -60,7 +60,8 @@ export default function UploadPage() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitpdf = async () => {
+    console.log("handleSubmitPdf is CALLED ... ");
     if (!file || !userQuery.trim()) {
       alert("Please upload a file and enter your query.");
       return;
@@ -81,7 +82,67 @@ export default function UploadPage() {
     formData.append("user_query", userQuery); // Add query to form data
 
     try {
-      const res = await fetch("http://localhost:8000/upload-pdf", {
+      const res = await fetch("https://hackrx-2026-1.onrender.com/upload-pdf", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log(data);
+      setResponse(data);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Upload failed. Check the backend or network.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitDocs = async () => {
+    console.log("handleSubmitDocs CALLED ... ");
+    if (!file || !userQuery.trim()) {
+      alert("Please upload a document and enter your query.");
+      return;
+    }
+
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", file); // renamed variable
+    formData.append("user_query", userQuery); // keep query same
+
+    try {
+      const res = await fetch("https://hackrx-2026-1.onrender.com/upload-docs", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log(data);
+      setResponse(data);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Upload failed. Check the backend or network.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitEmail = async () => {
+    console.log("handleSubmitEmail CALLED ... ");
+    if (!file || !userQuery.trim()) {
+      alert("Please upload an email file and enter your query.");
+      return;
+    }
+
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("user_query", userQuery);
+
+    try {
+      const res = await fetch("https://hackrx-2026-1.onrender.com/upload-pdf", {
         method: "POST",
         body: formData,
       });
@@ -172,7 +233,15 @@ export default function UploadPage() {
                 />
 
                 <Button
-                  onClick={handleSubmit}
+                  onClick={
+                    type === "pdf"
+                      ? handleSubmitpdf
+                      : type === "word"
+                      ? handleSubmitDocs
+                      : type === "email"
+                      ? handleSubmitEmail
+                      : undefined
+                  }
                   className="mt-4 w-full"
                   disabled={!file || loading}
                 >
