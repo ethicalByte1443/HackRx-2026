@@ -88,7 +88,6 @@ export default function UploadPage() {
       });
 
       const data = await res.json();
-      console.log(data);
       setResponse(data);
     } catch (err) {
       console.error("Upload failed:", err);
