@@ -19,8 +19,9 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 UPLOAD_DIR = "uploaded_pdfs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Bearer token for hackathon
-TEAM_TOKEN = "ca7c5627922a58ccf3887ccb9c81e59655363400372cb9b33c7dac74e3c5473b"
+
+# Bearer token for hackathon (now loaded from environment)
+TEAM_TOKEN = os.getenv("TEAM_TOKEN")
 auth_scheme = HTTPBearer()
 
 app = FastAPI()
