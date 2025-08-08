@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, HttpUrl
@@ -167,8 +167,11 @@ async def hackrx_run(request: HackRxRequest):
             async with session.get(pdf_url) as response:
                 if response.status != 200:
                     raise HTTPException(status_code=400, detail="Failed to download the PDF.")
+                content = await response.read()
+                if not isinstance(content, bytes):
+                    raise HTTPException(status_code=400, detail="Invalid content received.")
                 with open(temp_file_path, "wb") as f:
-                    f.write(await response.read())
+                    f.write(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF download error: {str(e)}")
 
