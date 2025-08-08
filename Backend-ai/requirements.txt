@@ -10,3 +10,4 @@ scikit-learn
 python-docx
 pydantic
 aiohttp
+pdfminer.six
