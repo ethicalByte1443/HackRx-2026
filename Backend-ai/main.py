@@ -55,12 +55,20 @@ class HackRxRequest(BaseModel):
 
 # ---------- Utils ----------
 def extract_text_from_pdf(file_path: str) -> str:
-    doc = fitz.open(file_path)
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    doc.close()
-    return text
+    # Ensure file_path is a string
+    if not isinstance(file_path, str):
+        print(f"DEBUG: file_path is not a string: {file_path} (type: {type(file_path)})")
+        raise HTTPException(status_code=500, detail="Internal error: file path is not a string.")
+    try:
+        doc = fitz.open(file_path)
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        doc.close()
+        return text
+    except Exception as e:
+        print(f"DEBUG: Error opening PDF: {e}, file_path: {file_path}")
+        raise HTTPException(status_code=500, detail=f"PDF extraction error: {str(e)}")
 
 def extract_clauses_from_pdf(text: str) -> list[str]:
     if len(text) > 50000:
