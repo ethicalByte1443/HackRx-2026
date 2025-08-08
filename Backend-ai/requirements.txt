@@ -1,10 +1,12 @@
-uvicorn
-pydantic
 fastapi
+uvicorn
+gunicorn
 python-dotenv
 PyMuPDF
 requests
 groq
 python-multipart
-gunicorn
 scikit-learn
+python-docx
+pydantic
+aiohttp
