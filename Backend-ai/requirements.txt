@@ -11,3 +11,4 @@ python-docx
 pydantic
 aiohttp
 pdfminer.six
+transformers
