@@ -19,7 +19,6 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 UPLOAD_DIR = "uploaded_pdfs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Bearer token for hackathon
 TEAM_TOKEN = "ca7c5627922a58ccf3887ccb9c81e59655363400372cb9b33c7dac74e3c5473b"
 auth_scheme = HTTPBearer()
 
@@ -68,13 +67,11 @@ def extract_clauses_from_pdf(text: str) -> list[str]:
     cleaned_text = re.sub(r'\s+', ' ', text).strip()
     clauses = []
 
-    # By periods
     for clause in cleaned_text.split("."):
         clause = clause.strip()
         if 30 < len(clause) < 1000:
             clauses.append(clause)
 
-    # Numbered clauses
     numbered_pattern = r'(?:^|\n)\s*\d+\.\s*([^.]+(?:\.[^.]*)*)'
     numbered_matches = re.findall(numbered_pattern, text, re.MULTILINE)
     for match in numbered_matches:
@@ -162,20 +159,26 @@ async def hackrx_run(request: HackRxRequest):
     questions = request.questions
 
     temp_file_path = os.path.join(UPLOAD_DIR, "temp_policy.pdf")
+
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(pdf_url) as response:
+            async with session.get(str(pdf_url)) as response:
                 if response.status != 200:
                     raise HTTPException(status_code=400, detail="Failed to download the PDF.")
+                content_type = response.headers.get('Content-Type', '').lower()
+                if 'pdf' not in content_type:
+                    raise HTTPException(status_code=400, detail=f"URL did not return a PDF. Content-Type: {content_type}")
                 content = await response.read()
-                if not isinstance(content, bytes):
-                    raise HTTPException(status_code=400, detail="Invalid content received.")
                 with open(temp_file_path, "wb") as f:
                     f.write(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF download error: {str(e)}")
 
-    text = extract_text_from_pdf(temp_file_path)
+    try:
+        text = extract_text_from_pdf(temp_file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading PDF file: {str(e)}")
+
     real_clauses = extract_clauses_from_pdf(text)
     if not real_clauses:
         raise HTTPException(status_code=400, detail="No valid clauses found in document.")
