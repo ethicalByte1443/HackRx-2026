@@ -59,7 +59,11 @@ def extract_text_from_pdf(file_path: str) -> str:
     if not isinstance(file_path, str):
         print(f"DEBUG: file_path is not a string: {file_path} (type: {type(file_path)})")
         raise HTTPException(status_code=500, detail="Internal error: file path is not a string.")
+    if not os.path.isfile(file_path):
+        print(f"DEBUG: file does not exist at path: {file_path}")
+        raise HTTPException(status_code=500, detail=f"PDF file does not exist at path: {file_path}")
     try:
+        print(f"DEBUG: Opening PDF at path: {file_path}")
         doc = fitz.open(file_path)
         text = ""
         for page in doc:
