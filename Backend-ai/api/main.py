@@ -14,6 +14,7 @@ from groq import Groq
 import spacy
 import re as re
 from docx import Document
+from fastapi.concurrency import run_in_threadpool
 
 
 from spacy.cli import download
@@ -157,45 +158,47 @@ def root():
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...), user_query: str = Form(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+
+    # Step 1: Save uploaded PDF
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    text = extract_text_from_pdf(file_path)
-    real_clauses = extract_clauses_from_pdf(text)
+    # Step 2: Run heavy logic in a background thread to prevent blocking
+    def process_pdf():
+        text = extract_text_from_pdf(file_path)
+        real_clauses = extract_clauses_from_pdf(text)
+        if not real_clauses:
+            raise HTTPException(status_code=400, detail="No valid clauses found in PDF.")
 
-    if not real_clauses:
-        raise HTTPException(status_code=400, detail="No valid clauses found in PDF.")
+        # Create FAISS index and embeddings
+        clause_embeddings = model.encode(real_clauses)
+        clause_embeddings_np = np.array(clause_embeddings)
+        dimension = clause_embeddings_np.shape[1]
+        index = faiss.IndexFlatL2(dimension)
+        index.add(clause_embeddings_np)
 
-    clause_embeddings = model.encode(real_clauses)
-    clause_embeddings_np = np.array(clause_embeddings)
-    dimension = clause_embeddings_np.shape[1]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(clause_embeddings_np)
+        # Search for relevant clauses
+        parsed_query = parse_and_enhance_query(user_query)
+        query_embedding = model.encode([parsed_query])
+        distances, indices = index.search(np.array(query_embedding), 5)
+        matched_clauses = [real_clauses[i] for i in indices[0]]
 
-    parsed_query = parse_and_enhance_query(user_query)
-    print("Parsed Query:", parsed_query)
+        top_clauses = ', '.join(matched_clauses[:5])
+        llm_result = process_claim(user_query, top_clauses)
 
-    # Step 2: Generate embedding and search
-    query_embedding = model.encode([parsed_query])
-    distances, indices = index.search(np.array(query_embedding), 5)
+        return {
+            "matched_clauses": matched_clauses,
+            "LLM_response": llm_result
+        }
 
-    # Step 3: Return matched clauses
-    matched_clauses = [real_clauses[i] for i in indices[0]]
+    # Run in a separate thread
+    result = await run_in_threadpool(process_pdf)
 
-    top_clauses = ', '.join(matched_clauses[:5])
-    payload = {
-        "user_query": user_query,
-        "matched_clause": top_clauses
-    }
-
-
-    result = process_claim(user_query, top_clauses)
-    print(result)
     return {
         "message": "File uploaded and processed successfully.",
         "user_query": user_query,
-        "matched_clauses": matched_clauses,
-        "LLM_response": result
+        "matched_clauses": result["matched_clauses"],
+        "LLM_response": result["LLM_response"]
     }
 
 
