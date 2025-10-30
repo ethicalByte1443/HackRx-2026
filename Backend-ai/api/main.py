@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import os
 import shutil
 import fitz  # PyMuPDF
@@ -20,7 +20,11 @@ from spacy.cli import download
 
 
 # ---------- Setup ----------
-load_dotenv()
+
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -91,9 +95,7 @@ def parse_and_enhance_query(user_query):
     
     return enhanced_query if enhanced_query else user_query
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def process_claim(user_query: str, clause: str):
     prompt = f"""
@@ -119,15 +121,19 @@ Response:
                 "Content-Type": "application/json",
             },
             json={
-                "model": "llama-3.3-70b-versatile",  # ✅ Use the updated model
+                "model": "llama-3.3-70b-versatile",
                 "messages": [
-                    {"role": "user", "content": prompt}
+                    {
+                    "role": "user",
+                    "content": prompt
+                    }
                 ],
                 "temperature": 0.3
             }
         )
 
         result = response.json()
+        print(result)
 
         if "choices" not in result or not result["choices"]:
             return {"error": "Unexpected response from Groq", "raw": result}
